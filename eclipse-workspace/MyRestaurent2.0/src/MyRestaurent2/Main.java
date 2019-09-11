@@ -150,7 +150,7 @@ public class Main extends Application {
 
 		// s9 vip management page END
 
-		// s11 set new price or ia available for the menu popup START
+		// s11 set new price or is available for the menu popup START
 		Button bt11return = new Button("确认并返回");
 		VBox vb11 = new VBox(5);
 		vb11.setAlignment(Pos.CENTER_LEFT);
@@ -249,9 +249,11 @@ public class Main extends Application {
 		p2.setStyle("-fx-border-color:null;-fx-background-color:gold;");
 		p2.add(new Label("Account: "), 0, 1);
 		TextField tfaccount2 = new TextField();
+		tfaccount2.setPromptText("account");
 		p2.add(tfaccount2, 1, 1);
 		p2.add(new Label("Keyword:"), 0, 2);
 		TextField tfkeyword2 = new TextField();
+		tfkeyword2.setPromptText("password");
 		p2.add(tfkeyword2, 1, 2);
 		Button btloginAccount2 = new Button("Create Account");
 		btloginAccount2.setOnMouseClicked(e -> {
@@ -294,9 +296,11 @@ public class Main extends Application {
 		p1.setVgap(5.5);
 		p1.add(new Label("Account: "), 0, 1);
 		TextField tfaccount = new TextField();
+		tfaccount.setPromptText("account");
 		p1.add(tfaccount, 1, 1);
 		p1.add(new Label("Keyword:"), 0, 2);
 		PasswordField tfkeyword = new PasswordField();
+		tfkeyword.setPromptText("password");
 		p1.add(tfkeyword, 1, 2);
 		Button btloginAccount = new Button("Login");
 		p1.add(btloginAccount, 1, 3);
