@@ -1,0 +1,42 @@
+提供给组员调用的函数以及调用方式
+
+大部分函数基本测试通过，但还有待修改，还没那么块合并，so需要跟我交接的朋友先喵喵这个文档。
+我的代码在
+https://github.com/SeraphinaLiang/FATandDisk/tree/master/eclipse-workspace/DiskAndFAT/src/DiskAndFAT
+
+*************************************FAT类（用  FAT.函数名   的形式调用）**********************************************
+
+// 用户退出时选择是否保存数据
+public static void saveFile(boolean ifSave)
+
+// 用户选择是否根据上次保存的数据初始化界面
+public static void initFile(boolean ifInit)
+
+// 修改文件内容（参数：文件内容）
+public static void modifiedFileContent(String newData)
+
+// 读取文件数据（参数：该文件的起始盘块号）
+public static String readFileDataFromDisk(int startBlockIndex)
+
+// 回收该文件已分配的磁盘盘块，删除文件时调用（参数：该文件的起始盘块号）
+public static void recycleAllocatedDiskBlock(int startBlockIndex)
+
+// 分配空闲磁盘盘块并判断是否继续，并把需要放入上一磁盘(小于等于64个char)的数据传入（给文件分配盘块）
+    新文件第一次调用该函数传入空字符串
+    最后一次调用该函数即参数（false，string）之后，立即调用getFileStartIndex()获取起始盘块号（下方所示）
+    待用户点击‘保存’时再判断字符长度传入数据,请勿在用户输入时（还要改来改去时）调用
+    public static void keepAllocateFreeDiskBlock(boolean keepAllocate, String data)
+
+// 返回起始盘块号（文件）
+    public static int getFileStartIndex() 
+
+// 分配空闲磁盘盘块（无参数，默认为1个盘块）返回分配的磁盘盘块号-----（给文件夹分配盘块）
+    public static int allocateFreeDiskBlock()
+
+*********************************************Controller******************************************************************
+
+// 选中文件对应FAT行变色（参数：文件的起始盘块号），这个目前还没实现，不过先加上也没有关系
+    public void rowFATLightUp(int luminate)
+
+//若你的操作与文件分配表和磁盘的显示（变更）有关，务必在你的方法中调用该方法 即：刷新界面
+    public void paintAll() 
