@@ -4,7 +4,7 @@
 package DiskAndFAT;
 
 //
-public class Item {
+public class Item implements java.io.Serializable{
 
 	// 第几行
 	public int row;

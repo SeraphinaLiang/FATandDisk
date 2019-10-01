@@ -3,22 +3,22 @@ package DiskAndFAT;
 
 import java.util.*;
 
-public class Disk {
+public class Disk implements java.io.Serializable{
 
 	// 全部磁盘盘块数量-128个盘块
 	private static final int TOTAL_BLOCK_NUMBER = 128;
 	// 文件已经占用的盘块数量
 	public static int occupiedBlockNumber = 0;
+	
 	// 128个磁盘盘块
 	private static ArrayList<DiskBlock> diskBlocks = new ArrayList<>(TOTAL_BLOCK_NUMBER);
-	
 	// 模拟磁盘-对象流输入输出<起始盘块号，相应文件内容>
-	private static HashMap<Integer,StringBuffer> diskStimulator = new HashMap<>();
+	private static HashMap<Integer, StringBuffer> diskStimulator = new HashMap<>();
 
 	// 当前文件存储的全部数据
 	private static StringBuffer totalData = new StringBuffer();
 	// 当前文件的长度
-	private static int dataLength;
+	private static int dataLength = 0;
 
 	public Disk() {
 		initalDiskBlock();
@@ -69,20 +69,57 @@ public class Disk {
 
 	}
 
+	// 根据起始盘块号删除文件
+	public static void clearFileInDisk(int startIndex) {
+		diskStimulator.remove(startIndex);
+	}
+
 	// 获取用户输入的数据
 	public static void readInData(String data) {
 		totalData.append(data);
 	}
 
-	// 将当前文件的数据写入模拟磁盘（文件流输入）
+	// 将当前文件的数据写入模拟磁盘
 	public static void inputDataToStimulator(int startIndex) {
-		diskStimulator.put(startIndex,totalData);
+		StringBuffer temp = new StringBuffer(totalData);
+		diskStimulator.put(startIndex, temp);
 		totalData.setLength(0);// 清除当前文件数据
+		dataLength = 0;
 	}
 
 	// 将模拟磁盘中的数据读出（参数：该文件的起始盘块号）
-	public static StringBuffer getDataFromDisk(int startBlockIndex) {
-		return totalData;
+	public static String getDataFromDisk(int startBlockIndex) {
+		String s = diskStimulator.get(startBlockIndex).toString();
+		dataLength = s.length();
+		return s;
+	}
+
+	// 修改文件内容
+	public static void modifiedFileContent(int startBlockIndex, String newData) {
+		StringBuffer s = diskStimulator.get(startBlockIndex);
+		s.setLength(0);
+		s.append(newData);
+
+	}
+
+	public static HashMap<Integer, StringBuffer> getDiskStimulator() {
+		return diskStimulator;
+	}
+
+	public static void setDiskStimulator(HashMap<Integer, StringBuffer> diskStimulator) {
+		Disk.diskStimulator = diskStimulator;
+	}
+
+	public static int getDataLength() {
+		return dataLength;
+	}
+
+	public static void setDataLength(int dataLength) {
+		Disk.dataLength = dataLength;
+	}
+
+	public static void setDiskBlocks(ArrayList<DiskBlock> diskBlocks) {
+		Disk.diskBlocks = diskBlocks;
 	}
 
 	public static int getOccupiedBlockNumber() {
