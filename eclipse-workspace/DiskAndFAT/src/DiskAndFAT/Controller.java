@@ -45,8 +45,9 @@ public class Controller implements Initializable {
 
 	// 请勿直接调用
 	public void paintDiskBlocks() {
+
 		if (Disk.getDiskBlocks().get(2).isAllocated()) {
-			db2.setFill(Color.BLANCHEDALMOND);
+			db2.setFill(Color.DARKSLATEBLUE);
 		}
 		if (!Disk.getDiskBlocks().get(2).isAllocated()) {
 			db2.setFill(Color.AQUAMARINE);
@@ -83,8 +84,7 @@ public class Controller implements Initializable {
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
 
-		rowFATLightUp(3);
-		paintAll();
+	//	rowFATLightUp(3);
 		paintAll();
 	}
 

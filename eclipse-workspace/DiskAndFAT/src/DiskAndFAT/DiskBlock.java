@@ -8,7 +8,7 @@ import java.lang.*;
  * @author pc
  *
  */
-public class DiskBlock {
+public class DiskBlock implements java.io.Serializable{
 
 	// 该磁盘盘块是否已经分配
 	private boolean isAllocated;

@@ -1,31 +1,27 @@
-/**
- * 
- */
+
 package DiskAndFAT;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.io.*;
 
-/**
- * @author pc
- *
- */
-public class FAT {
+public class FAT implements java.io.Serializable {
 
 	// FAT表的内容
 	public static int FATtable[] = new int[128];
-
-	// 当前文件的起始盘块号
-	public static int fileIndexStart;
-	// 当前文件占用的所有盘块号
-	public static int fileIndex[] = new int[120];
-	// 当前文件共占用多少个盘块
-	public static int fileOccupiedBlockNumber = 0;
-
 	// tableView的FAT表中content显示
 	public static ArrayList<Item> contents = new ArrayList<>();
-	// 总分配函数-分配几个盘块
+
+	// searchOccupiedBlockIndex-当前文件的起始盘块号
+	public static int fileIndexStart;
+	// searchOccupiedBlockIndex-当前文件占用的所有盘块号
+	public static int fileIndex[] = new int[120];
+	// searchOccupiedBlockIndex-当前文件共占用多少个盘块
+	public static int fileOccupiedBlockNumber = 0;
+
+	// 总分配函数keepAllocateFreeDiskBlock-分配几个盘块
 	public static int totalBlockNeed = 0;
-	// 总分配函数-分配盘块时的起始盘块号
+	// 总分配函数keepAllocateFreeDiskBlock-分配盘块时的起始盘块号
 	public static int startIndex = 300;
 
 	public FAT() {
@@ -38,20 +34,100 @@ public class FAT {
 		}
 	}
 
+	// 用户退出时选择是否保存数据----组员调用
+	public static void saveFile(boolean ifSave) throws IOException {
+		if (ifSave) {
+			// 创建文件
+			File file = new File("save data.dat");
+			// 对象输出流
+			try (ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream("save data.dat"));) {
+				output.writeObject(FATtable);
+				output.writeObject(contents);
+				output.writeObject(Disk.getDiskStimulator());
+				output.writeObject(Disk.getDiskBlocks());
+				output.writeObject(Disk.getOccupiedBlockNumber());
+			}
+		}
+	}
+
+	// 用户选择是否根据上次保存的数据初始化界面-----组员调用
+	public static void initFile(boolean ifInit) throws ClassNotFoundException, IOException {
+		if (ifInit) {
+			try (ObjectInputStream input = new ObjectInputStream(new FileInputStream("save data.dat"));) {
+				FATtable = (int[]) input.readObject();
+				contents=(ArrayList<Item>) input.readObject();
+				Disk.setDiskStimulator((HashMap<Integer, StringBuffer>) input.readObject());
+				Disk.setDiskBlocks((ArrayList<DiskBlock>) input.readObject());
+				Disk.setOccupiedBlockNumber((int) input.readObject());
+			}
+		}
+	}
+
 	// 修改文件内容（参数：文件内容）------组员调用
-	public static void midifiedFileContent(String newData) throws Exception {
+	public static void modifiedFileContent(String newData) throws Exception {
+		int newDataLength = newData.length();
+		int oldDataLength = Disk.getDataLength();
+		int fileIndexStartTemp = fileIndexStart;
 		// 判断newData增加了还是减少了
 		// 减少：删除相应长度，判断是否需要释放磁盘空间
-		// 增加：分配新磁盘空间，修改Stringbuffer内容，异常：磁盘空间不足异常
+
+		if (newDataLength <= oldDataLength) {
+			Disk.modifiedFileContent(fileIndexStart, newData);
+			int alterLength = oldDataLength - newDataLength;
+			int blockMinus = (alterLength / 64);
+			if (blockMinus >= 1) {
+				if (blockMinus == fileOccupiedBlockNumber) {
+					int end = fileIndex[0];
+					FATtable[end] = 255;
+					Item itemp = contents.get(end);
+					itemp.setContent(255);
+					recycleAllocatedDiskBlock(fileIndex[1]);
+				} else {
+					int end = fileIndex[fileOccupiedBlockNumber - blockMinus - 1];
+					FATtable[end] = 255;
+					Item itemp = contents.get(end);
+					itemp.setContent(255);
+					int i = fileIndex[fileOccupiedBlockNumber - blockMinus];
+					recycleAllocatedDiskBlock(i);
+				}
+			}
+		}
+		// 增加：分配新磁盘空间，修改Stringbuffer内容
+		else {
+			int alterLength = newDataLength - oldDataLength;
+			int blockAdd = alterLength / 64;
+			// 异常：磁盘空间不足异常
+			if (!hasFreeDiskBlock(blockAdd)) {
+				throw new NotEnoughBlockException("not enough block");
+			} else {
+				Disk.modifiedFileContent(fileIndexStart, newData);
+				if (blockAdd == 1) {
+					int oldEnd = fileIndex[fileOccupiedBlockNumber - 1];
+					int newStart = allocateFreeDiskBlock();
+					FATtable[oldEnd] = newStart;
+					Item itemp = contents.get(oldEnd);
+					itemp.setContent(newStart);
+				} else if (blockAdd > 1) {
+					int oldEnd = fileIndex[fileOccupiedBlockNumber - 1];
+					int newStart = allocateFreeDiskBlock(blockAdd);
+					FATtable[oldEnd] = newStart;
+					Item itemp = contents.get(oldEnd);
+					itemp.setContent(newStart);
+				}
+			}
+		}
+		searchOccupiedBlockIndex(fileIndexStartTemp);
 	}
 
 	// 读取文件数据（参数：该文件的起始盘块号）------组员调用
-	public static StringBuffer readFileDataFromDisk(int startBlockIndex) {
+	public static String readFileDataFromDisk(int startBlockIndex) {
+		// 更新当前文件
 		searchOccupiedBlockIndex(startBlockIndex);
-		return Disk.getDataFromDisk(startBlockIndex);
+		String s = Disk.getDataFromDisk(startBlockIndex);
+		return s;
 	}
 
-	// 修改FAT-回收该文件已分配的磁盘盘块（参数：该文件的起始盘块号）------组员调用
+	// 修改FAT-回收该文件已分配的磁盘盘块（参数：该文件的起始盘块号）------组员调用(删除文件)
 	public static void recycleAllocatedDiskBlock(int startBlockIndex) {
 
 		searchOccupiedBlockIndex(startBlockIndex);
@@ -62,6 +138,7 @@ public class FAT {
 			itemp.setContent(0);
 		}
 		Disk.recycleAllocatedDiskBlock();
+		Disk.clearFileInDisk(startBlockIndex);
 	}
 
 	// 分配空闲磁盘盘块并判断是否继续，并把需要放入上一磁盘(小于等于64个char)的数据传入-------组员调用（文件）
@@ -81,16 +158,20 @@ public class FAT {
 				throw new NotEnoughBlockException("not enough block");
 			}
 
-		} else { // 不需要下一盘块
+		} else if (!keepAllocate) { // 不需要下一盘块
 			Disk.readInData(data);
+
 			if (totalBlockNeed == 1) {
 				startIndex = allocateFreeDiskBlock();
 			} else {
 				startIndex = allocateFreeDiskBlock(totalBlockNeed);
 			}
+
 			Disk.inputDataToStimulator(startIndex);
 			totalBlockNeed = 0;// 用完之后清零
+			searchOccupiedBlockIndex(startIndex);
 		}
+
 	}
 
 	// 返回起始盘块号-----组员调用（文件）
@@ -100,7 +181,6 @@ public class FAT {
 
 	// 修改FAT-分配空闲磁盘盘块（无参数，默认为1个盘块）返回分配的磁盘盘块号------组员调用（文件夹）
 	public static int allocateFreeDiskBlock() {
-
 		int allocateBlockIndex = 300;
 		for (int i = 2; i <= 127; i++) {
 			if (FATtable[i] == 0) {// 未分配
@@ -114,6 +194,8 @@ public class FAT {
 		Disk.allocateFreeDiskBlock(allocateBlockIndex);
 		return allocateBlockIndex;
 	}
+
+//*********************************************************************************************************//
 
 	// 修改FAT-分配指定数量个空闲磁盘盘块，返回分配的第一个盘块号
 	public static int allocateFreeDiskBlock(int blockNumber) {
